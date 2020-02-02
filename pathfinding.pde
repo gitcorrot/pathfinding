@@ -1,17 +1,20 @@
-final int nodeSize = 100;
+final int nodeSize = 10;
 
-Node[][] nodes;
-Node currentNode;
-Node startNode;
-Node targetNode;
-ArrayList<Node> openSet = new ArrayList(); // nodes to be evaluated
-ArrayList<Node> closedSet = new ArrayList(); // evaluated nodes
+private Node[][] nodes;
+private Node currentNode;
+private Node startNode;
+private Node targetNode;
+private ArrayList<Node> openSet = new ArrayList(); // nodes to be evaluated
+private ArrayList<Node> closedSet = new ArrayList(); // evaluated nodes
+
+private boolean done = false;
+private ArrayList<Node> path = new ArrayList(); // final path
 
 /*----------------------------------------------------------*/
 
 void setup() {
   size(800, 800); 
-  frameRate(1);
+  frameRate(60);
 
   // Initialize empty nodes 2D array
   nodes = new Node[width/nodeSize][height/nodeSize];
@@ -35,6 +38,31 @@ void setup() {
   // Set target node
   nodes[nodes.length-1][nodes.length-1].targetNode = true;
   targetNode = nodes[nodes.length-1][nodes.length-1];
+
+  // Add some obstacles
+  nodes[3][4].obst = true;
+  nodes[4][3].obst = true;
+  nodes[4][5].obst = true;
+  nodes[3][5].obst = true;
+  nodes[3][3].obst = true;
+  nodes[14][5].obst = true;
+  nodes[13][5].obst = true;
+  nodes[13][63].obst = true;
+  nodes[55][63].obst = true;
+  nodes[56][63].obst = true;
+  nodes[57][63].obst = true;
+  nodes[58][63].obst = true;
+  nodes[59][63].obst = true;
+  nodes[59][64].obst = true;
+  nodes[59][65].obst = true;
+  nodes[60][65].obst = true;
+  nodes[61][65].obst = true;
+  nodes[62][65].obst = true;
+  nodes[63][65].obst = true;
+  nodes[65][65].obst = true;
+  nodes[64][65].obst = true;
+  nodes[66][65].obst = true;
+  nodes[67][65].obst = true;
 }
 
 /*----------------------------------------------------------*/
@@ -50,25 +78,40 @@ void draw() {
   }
 
   // Pathfinding
-  //print(openSet.get(0)==nodes[0][0]); TRUE
+  if (done) return;
+
+  if (openSet.isEmpty()) {
+    println("Can't find path!");
+    done = true;
+    return;
+  }
+
   currentNode = getBestOpenNode();
+  openSet.remove(currentNode);
+  closedSet.add(currentNode);
   println("New current node: X="+currentNode.x+" Y="+currentNode.y);
 
   if (currentNode == targetNode) {
-    print("Finished!");
+    println("------------------------------------");
+    println("Finished!");
+    done = true;
+    reconstructPath();
     return;
   }
 
   // Get neighbours of current node
-  getNeighbours(currentNode);
   for (Node n : getNeighbours(currentNode)) {
-    // g -> distance from starting node
-    n.g += sqrt(abs(n.x - currentNode.x) + abs(n.y - currentNode.y));
-    println("NEW G = " + n.g);
-    // h -> distance from target node
-    n.h = abs(n.x - targetNode.x) + abs(n.y - targetNode.y);
-    // f -> sum of g and h
-    n.f = n.g + n.h;
+    if (!closedSet.contains(n)) {
+      float temp_g = n.g + sqrt(abs(n.x - currentNode.x) + abs(n.y - currentNode.y));
+      if (!openSet.contains(n) || temp_g < n.g ) {
+        n.g = temp_g;
+        n.h = abs(n.x - targetNode.x) + abs(n.y - targetNode.y);
+        n.f = n.g + n.h;
+
+        n.parent = currentNode;
+        openSet.add(n);
+      }
+    }
   }
 }
 
@@ -86,20 +129,29 @@ Node getBestOpenNode() {
 // Returns neighbour nodes of given node
 ArrayList<Node> getNeighbours(Node node) {
   ArrayList<Node> neighbours = new ArrayList();
-  println("getNeighbours(" +node.x+ ","+node.y+")");
 
   for (int i = node.x-1; i <= node.x+1; i++) {
     for (int j = node.y-1; j <= node.y+1; j++) {
       if (i >= 0 && j >= 0 && i < nodes.length && j < nodes[0].length) {
         if (!(i == node.x && j == node.y)) {
-          neighbours.add(nodes[i][j]);
-          nodes[i][j].exposed = true;
-          println("X=" + i + " Y=" + j);
+          if (!node.obst) {
+            neighbours.add(nodes[i][j]);
+            nodes[i][j].exposed = true;
+          }
         }
       }
     }
   }
   return neighbours;
+}
+
+void reconstructPath() {
+  while (currentNode != startNode) {
+    currentNode.path = true;
+    path.add(currentNode);
+    currentNode = currentNode.parent;
+  }
+  println("Path recontructed");
 }
 
 /*----------------------------------------------------------

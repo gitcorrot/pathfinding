@@ -1,9 +1,12 @@
 class Node {
   int x, y;
-  float g, h, f;
+  float g; // distance from starting node
+  float h; // distance from target node
+  float f; // sum of g and h
   boolean obst;
   boolean startNode, targetNode;
   boolean exposed;
+  boolean path = false;
   Node parent;
 
   Node(int x, int y) {
@@ -23,6 +26,8 @@ class Node {
       fill(255, 0, 0);
     } else if (obst) {
       fill(16);
+    } else if (path) {
+      fill(0, 0, 255);
     } else if (exposed) {
       fill(200);
     } else {
