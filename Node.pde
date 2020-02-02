@@ -3,35 +3,33 @@ class Node {
   float g; // distance from starting node
   float h; // distance from target node
   float f; // sum of g and h
-  boolean obst;
   boolean startNode, targetNode;
-  boolean exposed;
+  boolean obst, exposed, closed;
   boolean path = false;
   Node parent;
 
   Node(int x, int y) {
     this.x = x;
     this.y = y;
-    obst = false;
-    exposed = false;
-    //g = 9999999; // Inf
   }
 
   /*--------------------------------------------------------*/
 
   void show() {
     if (startNode) {
-      fill(0, 255, 0);
+      fill(50, 255, 50);
     } else if (targetNode) {
-      fill(255, 0, 0);
+      fill(255, 50, 50);
     } else if (obst) {
-      fill(16);
+      fill(32);
     } else if (path) {
-      fill(0, 0, 255);
+      fill(0, 125, 255);
+    } else if (closed) {
+      fill(255, 100, 100);
     } else if (exposed) {
-      fill(200);
+      fill(180);
     } else {
-      fill(150);
+      fill(140);
     }
 
     rect(this.x*nodeSize, this.y*nodeSize, nodeSize, nodeSize);

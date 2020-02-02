@@ -1,75 +1,104 @@
-final int nodeSize = 10;
+final int nodeSize = 25;
+final int delayTime = 1000;
+
+/* Approximation Heuristics mode:
+ * 1. Manhattan Distance
+ * 2. Euclidean Distance
+ * 3. Diagonal Distance
+ */
+final int MODE = 3;
 
 private Node[][] nodes;
 private Node currentNode;
 private Node startNode;
 private Node targetNode;
-private ArrayList<Node> openSet = new ArrayList(); // nodes to be evaluated
-private ArrayList<Node> closedSet = new ArrayList(); // evaluated nodes
+private ArrayList<Node> openSet; // nodes to be evaluated
+private ArrayList<Node> closedSet; // evaluated nodes
 
-private boolean done = false;
-private ArrayList<Node> path = new ArrayList(); // final path
+private int moveCount;
+private boolean done;
+private int doneTime; 
+private ArrayList<Node> path; // final path
 
-/*----------------------------------------------------------*/
+/*---------------------------------------------------------------*/
 
 void setup() {
-  size(800, 800); 
+  size(800, 600); 
   frameRate(60);
+  //randomSeed(5);
+  createNodes();
+}
 
-  // Initialize empty nodes 2D array
+void createNodes() {
+  println("\n\n------------------------------------");
+  println("Creating new board...");
+
+  // Reset variables
+  openSet = new ArrayList();
+  closedSet = new ArrayList();
+  path = new ArrayList();
+  done = false;
+  moveCount = 0;
+
+  // Initialize array with empty nodes
   nodes = new Node[width/nodeSize][height/nodeSize];
 
-  // Fill array with nodes
   for (int i = 0; i < width/nodeSize; i++) {
     for (int j = 0; j < height/nodeSize; j++) {
       nodes[i][j] = new Node(i, j);
     }
   }
 
+  // Fill array with some obstacles
+  for (int i = 5; i < width/nodeSize; i+=int(5 + random(8))-3) {
+    int r1 = 5 + int(random(height/nodeSize - 10));
+    int r2 = 5 + int(random(height/nodeSize - 10));
+    for (int j = 0; j < height/nodeSize; j++) {
+      if (j != r1 && j != r2)
+        nodes[i][j].obst = true;
+    }
+  }
+
   // Set start node
-  nodes[0][0].startNode = true;
-  nodes[0][0].exposed = true;
-  nodes[0][0].f = 0;
-  startNode = nodes[0][0];
+  int startIndex = int(random(nodes[0].length));
+  startNode = nodes[0][startIndex];
+  startNode.startNode = true;
 
   // Add start node to openSet
   openSet.add(startNode);
 
   // Set target node
-  nodes[nodes.length-1][nodes.length-1].targetNode = true;
-  targetNode = nodes[nodes.length-1][nodes.length-1];
+  int targetIndex = int(random(nodes[0].length));
+  targetNode = nodes[nodes.length-1][targetIndex];
+  targetNode.targetNode = true;
 
-  // Add some obstacles
-  nodes[3][4].obst = true;
-  nodes[4][3].obst = true;
-  nodes[4][5].obst = true;
-  nodes[3][5].obst = true;
-  nodes[3][3].obst = true;
-  nodes[14][5].obst = true;
-  nodes[13][5].obst = true;
-  nodes[13][63].obst = true;
-  nodes[55][63].obst = true;
-  nodes[56][63].obst = true;
-  nodes[57][63].obst = true;
-  nodes[58][63].obst = true;
-  nodes[59][63].obst = true;
-  nodes[59][64].obst = true;
-  nodes[59][65].obst = true;
-  nodes[60][65].obst = true;
-  nodes[61][65].obst = true;
-  nodes[62][65].obst = true;
-  nodes[63][65].obst = true;
-  nodes[65][65].obst = true;
-  nodes[64][65].obst = true;
-  nodes[66][65].obst = true;
-  nodes[67][65].obst = true;
+  // Calculate h score of all nodes
+  for (int i = 0; i < width/nodeSize; i++) {
+    for (int j = 0; j < height/nodeSize; j++) {
+      switch(MODE) {
+      case 1: 
+        {
+          nodes[i][j].h = abs(nodes[i][j].x - targetNode.x) + abs(nodes[i][j].y - targetNode.y); // Manhattan Distance
+          break;
+        }
+      case 2: 
+        {
+          nodes[i][j].h = sqrt(pow((nodes[i][j].x - targetNode.x), 2) + pow((nodes[i][j].y - targetNode.y), 2)); // Euclidean Distance
+          break;
+        }
+      case 3: 
+        {
+          nodes[i][j].h = max(abs(nodes[i][j].x - targetNode.x), abs(nodes[i][j].y - targetNode.y)); // Diagonal Distance
+          break;
+        }
+      }
+    }
+  }
 }
 
-/*----------------------------------------------------------*/
+/*---------------------------------------------------------------*/
 
 void draw() {
-  background(255);
-
   // Draw all nodes
   for (int i = 0; i < width; i += nodeSize) {
     for (int j = 0; j < height; j += nodeSize) {
@@ -77,8 +106,17 @@ void draw() {
     }
   }
 
+  textSize(nodeSize);
+  fill(250);
+  text(moveCount, width-nodeSize*2, nodeSize-3); 
+
   // Pathfinding
-  if (done) return;
+  if (done) {
+    if (millis() > doneTime + delayTime) {
+      createNodes();
+    }
+    return;
+  } else moveCount++;
 
   if (openSet.isEmpty()) {
     println("Can't find path!");
@@ -87,14 +125,12 @@ void draw() {
   }
 
   currentNode = getBestOpenNode();
+  currentNode.closed = true;
   openSet.remove(currentNode);
   closedSet.add(currentNode);
-  println("New current node: X="+currentNode.x+" Y="+currentNode.y);
 
   if (currentNode == targetNode) {
-    println("------------------------------------");
-    println("Finished!");
-    done = true;
+    println("Finished in "+moveCount+" moves!");
     reconstructPath();
     return;
   }
@@ -105,7 +141,6 @@ void draw() {
       float temp_g = n.g + sqrt(abs(n.x - currentNode.x) + abs(n.y - currentNode.y));
       if (!openSet.contains(n) || temp_g < n.g ) {
         n.g = temp_g;
-        n.h = abs(n.x - targetNode.x) + abs(n.y - targetNode.y);
         n.f = n.g + n.h;
 
         n.parent = currentNode;
@@ -152,11 +187,13 @@ void reconstructPath() {
     currentNode = currentNode.parent;
   }
   println("Path recontructed");
+  done = true;
+  doneTime = millis();
 }
 
-/*----------------------------------------------------------
+/*---------------------------------------------------------------
  * TODO: 
  * - choose start and target nodes by mouse click
  * - 
  * - 
- --------------------------------------------------------*/
+ ----------------------------------------------------------------*/
