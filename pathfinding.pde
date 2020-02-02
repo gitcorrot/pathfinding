@@ -8,6 +8,12 @@ final int delayTime = 1000;
  */
 final int MODE = 3;
 
+/* Obstacle mode:
+ * 1. Vertical strips 
+ * 2. Perlin noise
+ */
+final int OBSTACLE_MODE = 2;
+
 private Node[][] nodes;
 private Node currentNode;
 private Node startNode;
@@ -50,12 +56,34 @@ void createNodes() {
   }
 
   // Fill array with some obstacles
-  for (int i = 5; i < width/nodeSize; i+=int(5 + random(8))-3) {
-    int r1 = 5 + int(random(height/nodeSize - 10));
-    int r2 = 5 + int(random(height/nodeSize - 10));
-    for (int j = 0; j < height/nodeSize; j++) {
-      if (j != r1 && j != r2)
-        nodes[i][j].obst = true;
+  switch(OBSTACLE_MODE) {
+  case 1: 
+    {
+      for (int i = 5; i < width/nodeSize; i+=int(5 + random(8))-3) {
+        int r1 = 5 + int(random(height/nodeSize - 10));
+        int r2 = 5 + int(random(height/nodeSize - 10));
+        for (int j = 0; j < height/nodeSize; j++) {
+          if (j != r1 && j != r2)
+            nodes[i][j].obst = true;
+        }
+      }
+      break;
+    }
+  case 2: 
+    {
+      float ioff = random(100);
+      float joff = random(100);
+      for (int i = 0; i < width/nodeSize; i++) {
+        for (int j = 0; j < height/nodeSize; j++) {
+          float obstProbability = noise(joff, ioff) * 105;
+          // Creating obstacles
+          if (obstProbability < 40) nodes[i][j].obst = true;
+          joff += 0.3;
+        }
+        ioff += 0.3;
+        joff = 0;
+      }
+      break;
     }
   }
 
